@@ -1,5 +1,7 @@
 # Source code for my personal site
 
+Visit site at [mmikael.com](mmikael.com)
+
 ## Notes
 
 Hosted on github pages using a jekyll theme from [Start Bootstrap](https://startbootstrap.com).
