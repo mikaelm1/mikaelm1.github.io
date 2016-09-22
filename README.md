@@ -1,6 +1,6 @@
 # Source code for my personal site
 
-Visit site at [mmikael.com](mmikael.com)
+Visit site at [mmikael.com](www.mmikael.com)
 
 ## Notes
 
