@@ -96,6 +96,7 @@ If you've worked with Flask before, then this pattern will be familiar to you. T
 ## 5. Setup CLI Run
 
 Now we're ready to create a cli script to will create our app and run it for us. Inside `cli/__init__.py`, type the following:
+
 ```python
 import click
 
