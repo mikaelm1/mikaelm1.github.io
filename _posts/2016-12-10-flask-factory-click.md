@@ -8,7 +8,7 @@ subtitle: How to implement the Factory method in Flask with Click CLI
 
 There are a lot of samples online about implmenting the Factory method in Flask using the Flask-Script extension, but I was unable to find any using Click. Flask-Script is great, but since Click has been integrated into Flask, I figured I would start using it instead of Flask-Script.
 
-Let's start making our app! Actually, it will just be an empty shell of an app called "flask-factory-click", but that's all that's required to demonstrate the Factory method. Begin by setting up the folders needed for the app as shown below (You can find the final "app" [here](google.com)):
+Let's start making our app! Actually, it will just be an empty shell of an app called "flask-factory-click", but that's all that's required to demonstrate the Factory method. Begin by setting up the folders needed for the app as shown below (You can find the final "app" [here](https://github.com/mikaelm1/flask-factory-click):
 
 ```
 ├── app
@@ -113,6 +113,6 @@ def cli():
 
 This is a simple Click command that calls the `create_app()` function, resets the database, and runs the app. You'll notice that the databse operations are done on the application context. The reason for this is the way we initialized the Flask-SQLAlchemy databse istance in our `app/__init__.py` file, which requires an application context to be attached to. You can read more about it [here](http://flask-sqlalchemy.pocoo.org/2.1/api/#configuration).
 
-Now if you try running `factory` in your terminal, the app should start up. If you go to "http://localhost:5000/", you'll see "Hi there" in the browser!
+Before we can call the command, we need to link Click to the cli direcotry. Run `pip install --ditable .`. Now if you try running `factory` in your terminal, the app should start up. If you go to "http://localhost:5000/", you'll see "Hi there" in the browser!
 
 
