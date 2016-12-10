@@ -13,13 +13,11 @@ Let's start making our app! Actually, it will just be an empty shell of an app c
 ```
 ├── app
 │   ├── __init__.py
-│   │   └── __init__.py
 │   ├── blueprints
 │   ├── data.sqlite
 │   └── tests
 ├── cli
 │   ├── __init__.py
-│       └── __init__.py
 ├── requirements.txt
 ├── setup.py
 ```
@@ -63,6 +61,7 @@ setup(
 ## 4. Setup App
 
 Now that we have all of our dependencies installed, it's time to create the actual app. Inside `app/__init__.py`, type the following:
+
 ```python
 import os
 
