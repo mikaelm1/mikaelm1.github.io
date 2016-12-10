@@ -29,9 +29,11 @@ First step, after creating the above foldlers/files is to create a virtual envir
 ## 2. Dependecies
 
 Inside `requirements.txt`, type the following:
+```
 Flask==0.10.1
 Click==6.4
 Flask-SQLAlchemy==2.1
+```
 
 Run `pip install -r requirements.txt`. This will install the three dependencies inside the requirements file.
 
