@@ -5,3 +5,7 @@ tags: [random, exciting-stuff]
 ---
 
 This is my first post, how exciting!
+```python
+def hello():
+  print("Hi there")
+```
