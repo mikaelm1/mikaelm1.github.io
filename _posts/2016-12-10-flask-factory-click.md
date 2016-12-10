@@ -113,6 +113,6 @@ def cli():
 
 This is a simple Click command that calls the `create_app()` function, resets the database, and runs the app. You'll notice that the databse operations are done on the application context. The reason for this is the way we initialized the Flask-SQLAlchemy databse istance in our `app/__init__.py` file, which requires an application context to be attached to. You can read more about it [here](http://flask-sqlalchemy.pocoo.org/2.1/api/#configuration).
 
-Before we can call the command, we need to link Click to the cli direcotry. Run `pip install --ditable .`. Now if you try running `factory` in your terminal, the app should start up. If you go to "http://localhost:5000/", you'll see "Hi there" in the browser!
+Before we can call the command, we need to link Click to the cli direcotry. Run `pip install --editable .`. Now if you try running `factory` in your terminal, the app should start up. If you go to "http://localhost:5000/", you'll see "Hi there" in the browser!
 
 
