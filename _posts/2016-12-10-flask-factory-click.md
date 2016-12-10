@@ -29,7 +29,7 @@ First step, after creating the above foldlers/files is to create a virtual envir
 ## 2. Dependecies
 
 Inside `requirements.txt`, type the following:
-```
+```txt
 Flask==0.10.1
 Click==6.4
 Flask-SQLAlchemy==2.1
@@ -40,6 +40,7 @@ Run `pip install -r requirements.txt`. This will install the three dependencies 
 ## 3. Setup CLI with setuptools
 
 Inside `setup.py`, type the following:
+
 ```python
 from setuptools import setup 
 
