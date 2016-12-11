@@ -1,14 +1,14 @@
 ---
 layout: post
 title: Flask Factory with Click
-subtitle: How to implement the Factory method in Flask with Click CLI
+subtitle: How to implement the Factory pattern in Flask with Click CLI
 ---
 
-[Click](http://click.pocoo.org/5/) is a Python package for creating command line interfaces and is written by the same guy that created Flask. Click has been integrated into Flask as of version 0.11. I found the "flask" script in version 0.11 to be a bit buggy (hopefully some of its issues will be fixed soon), but Click is a great tool and I used it for my last project with Flask version 0.10. 
+[Click](http://click.pocoo.org/5/) is a Python package for creating command line interfaces and is written by the same guy that created Flask. Click has been integrated into Flask as of version 0.11. I had some trouble getting the "flask" script in version 0.11 to work, but Click is a great tool and I used it for my last project with Flask version 0.10.
 
-There are a lot of samples online about implmenting the Factory method in Flask using the Flask-Script extension, but I was unable to find any using Click. Flask-Script is great, but since Click has been integrated into Flask, I figured I would start using it instead of Flask-Script.
+There are a lot of samples online demonstrating the Factory pattern in Flask using the Flask-Script extension, but I was unable to find any using Click. Flask-Script is great, but since Click has been integrated into Flask, I figured I would start using it instead of Flask-Script.
 
-Let's start making our app! Actually, it will just be an empty shell of an app called "flask-factory-click", but that's all that's required to demonstrate the Factory method. Begin by setting up the folders needed for the app as shown below (You can find the final "app" [here](https://github.com/mikaelm1/flask-factory-click):
+Let's start making our app! Actually, it will just be an empty shell of an app called "flask-factory-click", but that's all that's required to demonstrate the Factory pattern. Begin by setting up the folders needed for the app as shown below (You can find the final "app" [here](https://github.com/mikaelm1/flask-factory-click)):
 
 ```
 ├── app
@@ -60,7 +60,7 @@ setup(
 )
 ```
 
-"setup" is a Python library for creating packages and will allow us to run the "factory" command as if it was a binary. It basically links Click to the `cli` folder where our cli commands will be stored. In order to activate the package we need to run `pip install --editable .`. This command will create a folder called `Flask_Factory_CLI.egg-info`, but don't run it just yet.
+`setup` is a Python library for creating packages and will allow us to run the "factory" command as if it was a binary. It basically links Click to the `cli` folder where our cli commands will be stored. In order to activate the package we need to run `pip install --editable .`. This command will create a folder called `Flask_Factory_CLI.egg-info`, but don't run it just yet.
 
 ## 4. Setup App
 
