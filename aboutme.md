@@ -1,5 +1,5 @@
 ---
 layout: page
 title: Mikael Mukhsikaroyan
-subtitle: Full Stack iOS Engineer working with Swift and Python. Aspiring Wizard studying Computer Science.
+subtitle: Software developer specializing in backend development with Python and iOS development with Swift. Studying Computer Science at Oregon State University.
 ---
