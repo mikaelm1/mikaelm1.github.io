@@ -21,7 +21,7 @@ This guide will demonstrate some of the features of GitHub's API. We will make a
 
 Our app will allow a user to login via their GitHub account. In order for us to be able to implement this functionality, we need to [create an application](https://github.com/settings/applications/new), which you can do from your Settings tab. Under `Developer settings` select `OAuth applications` and register a new application. You can name your application whatever you like and use whatever url you want for the `Homepage URL` input. The important part is the `Authorization callback URL`. Enter `http://localhost:3000/gitauth`, we'll come back to this later. Your form should look something like this:
 
-![AppForm]()
+![AppForm](https://cloud.githubusercontent.com/assets/16492296/23198297/69820a58-f87b-11e6-93b9-f6fbfcd2b560.png)
 
 Once you create your application, you will see ClientID and Client Secret values. These values should be kept secret at all times, it's best not to keep them in any file that is under version control. We will be using these values shortly.
 
@@ -34,7 +34,7 @@ Press Ctrl-C to terminate
 ```
 If you visit `http://localhost:3000/home` you should see this page:
 
-![HomePage]()
+<img height="500" width="300" alt="screen shot 2017-02-21 at 9 19 53 pm" src="https://cloud.githubusercontent.com/assets/16492296/23198314/8dc46bd6-f87b-11e6-9df0-646d49912303.png">
 
 You can also build the app from scratch by following this guide. If you're building from scratch, create the following directory structure:
 
