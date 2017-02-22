@@ -15,6 +15,7 @@ This guide will demonstrate some of the features of GitHub's API. We will make a
 - [Repo Routes](#repo-routes)
     - [Get Repo Data](#get-repo-data)
     - [Create Repo](#create-repo)
+    - [Delete Repo](#delete-repo)
 
 ## Getting Started
 
@@ -271,3 +272,47 @@ function postData(url, withAuth, body, callback) {
 The helper function takes a url string, a boolean value to determine if it's an authenticated call, a dictionary for any possible values to be passed in the request body, and a callback function which will return the data to the calling function. The request edits the url if necessary based on if the call is to an authenticated user or not. It also sets a `user-agent` header and a `Content-Type` header to get the response in JSON format. If we get an error from GitHub, it returns an empty string, else it returns the JSON response.
 
 Back in our route to create a repository, before we make the request, we construct the body values we want to send. In our case, we will be sending the name and description the user entered, along with the `license_template` key that we set to `mit`, which will generate a `LICENSE` file with an MIT License in the newly created repository. There are many more options we can set, such as creating a `README`, when creating a repository and you can read about them [here](https://developer.github.com/v3/repos/#create). Once we have the url and body constructed, we call our helper `postData` function. If we don't get back an error, we construct a `repo` object from the JSON response by parsing out the name of the repo, date it was created, its description, and its owner's username. We then render the `repo.handlebars` template passing in the `repo` object in an array (the template is expecting an array) along with some other values like a `message` field, which the template will render as an alert at the top of the screen. 
+
+#### Delete Repo
+
+The user of our application now has the ability to fetch the data for a user's repositories and can even create a new repository. Now let's add the ability to delete a repository. If you remember earlier, when authenticating the user, we added the `delete_repo` scope request because without it we won't be able to delete a user's repository. Our home page has a form that let's the user delete one of their repositories by entering their GitHub username along with the name of the repository. This will not work for unauthenticated users. The form sends a `POST` request to route `/repo/delete`. We also add a helper function for making `DELETE` requests: 
+
+```javascript
+// helper function for sending DELETE requests
+function deleteData(url, callback) {
+    if (!userToken) {
+        callback("");
+        return;
+    }
+    url += "?access_token=" + userToken;
+    request.delete({url: url, headers: {'user-agent': 'node.js', 'Content-Type': 'application/json'}}, function(err, response, body){
+        if (err){
+            console.log("Error making DELETE call: " + err);
+            callback("");
+            return;
+        }
+        callback({'message': response.headers.status});
+    });
+}
+// Route to delete repo
+app.post('/repo/delete', function(req, res){
+    var userName = req.body.username;
+    var repoName = req.body.reponame;
+    if (!userToken || !userName || !repoName) {
+        res.render("home", {userToken: userToken, message:"Error deleting repo"});
+    }
+    var url = BASE_URL + "/repos/" + userName + "/" + repoName;
+    deleteData(url, function(body){
+        if (body === "") {
+            console.log("Got empty body for delete repo");
+            res.render("home", {userToken: userToken, message:"Error deleting repo"});
+            return;
+        }
+        res.render("home", {userToken: userToken, message:"Successfully deleted repo"});
+    });
+});
+```
+
+The `deleteData` function takes a url string and a callback function, which will return the response. There is no need for a boolean checking for auth because all `DELETE` calls will require an authenticated user and if the user is not authenticated, `deleteData` returns an empty string via the callback function. Otherwise, it makes the `DELETE` request to GitHub. If there is an error, the callback function returns an empty string. If our request is successful, GitHub will return a status of 204, which can be found in the header of the response. GitHub sends an empty body value on a successful request.
+
+Back in our route that will be making the `DELETE` request, we make sure that the user is authenticated and that they entered both a username and reponame that they want deleted. If either of these is false, we render the `home.handlebars` template with an error message. Otherwise, we build up the url and call the `deleteData` function. If we don't get an empty `body` response from `deleteData`, we know we successfully deleted the repository. We then render the `home.handlebars` template with a success message.
