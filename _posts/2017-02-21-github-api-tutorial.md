@@ -10,7 +10,7 @@ This guide will demonstrate some of the features of GitHub's API. We will make a
 
 - [Getting Started](#getting-started)
 - [Base Application Setup](#base-application-setup)
-- [Templates Setup](#template-setup)
+- [Templates Setup](#templates-setup)
 - [Auth Routes](#auth-routes)
 - [Repo Routes](#repo-routes)
     - [Get Repo Data](#get-repo-data)
@@ -56,7 +56,7 @@ You can also build the app from scratch by following this guide. If you're build
     └── repo.handlebars
 ```
 
-Most of the app logic will be in a file named `app.js`. The purpose of this tutorial is to demonstrate the use of GitHub's API, so we will not be going into detail about Node.js or express.js. Add the following inside `app.js`:
+Most of the app logic will be in a file named `app.js`. The purpose of this tutorial is to demonstrate the use of GitHub's API, so we will not be going into detail about Node.js or express.js. Add the following boilerplate code inside `app.js`:
 
 {% highlight javascript linenos %}
 var express = require("express");
@@ -220,6 +220,7 @@ function byDate(lh, rh) {
 }
 ```
 
+
 #### Create Repo
 
 Now that we know how to fetch data for a user's repositories, it's time to create a new repository for a user. This will require that the user be authenticated. A user is authenticated if our global `userToken` variable has a value. The home page has a form that the user can use to create a repository by entering a name for it and a description. The submit button of this form sends a `POST` request to `/repo/create`:
@@ -276,6 +277,7 @@ function postData(url, withAuth, body, callback) {
 The helper function takes a url string, a boolean value to determine if it's an authenticated call, a dictionary for any possible values to be passed in the request body, and a callback function which will return the data to the calling function. The request edits the url if necessary based on if the call is to an authenticated user or not. It also sets a `user-agent` header and a `Content-Type` header to get the response in JSON format. If we get an error from GitHub, it returns an empty string, else it returns the JSON response.
 
 Back in our route to create a repository, before we make the request, we construct the body values we want to send. In our case, we will be sending the name and description the user entered, along with the `license_template` key that we set to `mit`, which will generate a `LICENSE` file with an MIT License in the newly created repository. There are many more options we can set, such as creating a `README`, when creating a repository and you can read about them [here](https://developer.github.com/v3/repos/#create). Once we have the url and body constructed, we call our helper `postData` function. If we don't get back an error, we construct a `repo` object from the JSON response by parsing out the name of the repo, date it was created, its description, and its owner's username. We then render the `repo.handlebars` template passing in the `repo` object in an array (the template is expecting an array) along with some other values like a `message` field, which the template will render as an alert at the top of the screen. 
+
 
 #### Delete Repo
 
