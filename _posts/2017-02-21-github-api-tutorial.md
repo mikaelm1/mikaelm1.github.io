@@ -6,7 +6,7 @@ subtitle: How to use GitHub's API
 
 ## Description
 
-This guide will demonstrate some of the features of GitHub's API. We will make a very simple app with Node.js that will allow us to authenticate with GitHub and view, create, and delete repositories. The source code for the sample app can found [here](https://github.com/mikaelm1/github-api-tutorial). This tutorial is written as a project for my CS290 class at Oregon State University. 
+This guide will demonstrate some of the features of GitHub's API. We will make a very simple app with Node.js that will allow us to authenticate with GitHub and view, create, and delete repositories. We will also add the ability to create a webhook for a user's repository. The source code for the sample app can found [here](https://github.com/mikaelm1/github-api-tutorial). This tutorial is written as a project for my CS290 class at Oregon State University. 
 
 - [Getting Started](#getting-started)
 - [Base Application Setup](#base-application-setup)
@@ -16,6 +16,7 @@ This guide will demonstrate some of the features of GitHub's API. We will make a
     - [Get Repo Data](#get-repo-data)
     - [Create Repo](#create-repo)
     - [Delete Repo](#delete-repo)
+    - [Create Repo Webhook](#create-repo-webhook)
 
 ## Getting Started
 
@@ -34,7 +35,7 @@ Press Ctrl-C to terminate
 ```
 If you visit `http://localhost:3000/home` you should see this page:
 
-<img height="500" width="300" alt="screen shot 2017-02-21 at 9 19 53 pm" src="https://cloud.githubusercontent.com/assets/16492296/23198314/8dc46bd6-f87b-11e6-9df0-646d49912303.png">
+<img height="500" width="800" alt="screen shot 2017-02-21 at 9 19 53 pm" src="https://cloud.githubusercontent.com/assets/16492296/23198314/8dc46bd6-f87b-11e6-9df0-646d49912303.png">
 
 You can also build the app from scratch by following this guide. If you're building from scratch, create the following directory structure:
 
@@ -316,3 +317,71 @@ app.post('/repo/delete', function(req, res){
 The `deleteData` function takes a url string and a callback function, which will return the response. There is no need for a boolean checking for auth because all `DELETE` calls will require an authenticated user and if the user is not authenticated, `deleteData` returns an empty string via the callback function. Otherwise, it makes the `DELETE` request to GitHub. If there is an error, the callback function returns an empty string. If our request is successful, GitHub will return a status of 204, which can be found in the header of the response. GitHub sends an empty body value on a successful request.
 
 Back in our route that will be making the `DELETE` request, we make sure that the user is authenticated and that they entered both a username and reponame that they want deleted. If either of these is false, we render the `home.handlebars` template with an error message. Otherwise, we build up the url and call the `deleteData` function. If we don't get an empty `body` response from `deleteData`, we know we successfully deleted the repository. We then render the `home.handlebars` template with a success message.
+
+#### Create Repo Webhook
+
+A webhook is kind of like a subscription to some events, where if any of the events we subscribe to occur, we get notified. GitHub has a variety of webhooks that a user can subscribe to and you can read all about them [here](https://developer.github.com/webhooks/). We will be making a webhook that will send a notification whenever the user's repository is starred, gets a pull request, or whenever any code is pushed to the repository. The home page of our application has a form that gets the user's GitHub username and the name of their repository and sends a `POST` request to `/repo/webhook`:
+
+```javascript
+app.post('/repo/webhook', function(req, res){
+    var userName = req.body.username;
+    var repoName = req.body.reponame;
+    if (!userToken || !userName || !repoName) {
+        console.log("Need user and repo to create a webhook");
+        flashMessage = "Need username and name of repo to create a webhook";
+        res.redirect("/home");
+        return;
+    }
+    var url = BASE_URL + "/repos/" + userName + "/" + repoName + "/hooks";
+    var events = ["push", "pull_request", "watch"];
+    var callbackURL = "http://localhost:3000/repo/webhook/callback";
+    var config = {"url": callbackURL, "content_type": "json"};
+    var reqBody = {"name": "web", "active": true, "events": events, "config": config}
+    postData(url, true, reqBody, function(body){
+        if (body === "") {
+            flashMessage = "Error creating webhook";
+            res.redirect("/home");
+            return;
+        } 
+        flashMessage = "Successfully created webhook.";
+        var hook = {
+            "id": body.id,
+            "test_url": body.test_url,
+            "ping_url": body.ping_url,
+            "name": body.name
+        };
+        res.redirect("/home");
+        testWebhook(hook);
+    });
+});
+
+// callback route for the webhook
+app.post('/repo/webhook/callback', function(req, res){
+    console.log("Need to have this route be accessible from the Internet in order to get any requests. Also, set up websockets or some other way of pushing from the server to display this message on the client side!");
+});
+```
+
+First, we make sure that the user is logged in and that they entered their username and name of repository. If not, we set an error message and redirect back to the home page. Otherwise, we construct the url `/repos/:owner/:repo/hooks` along with the types of events we want to subscribe to. There are many different event types to choose from and you can see them all [here](https://developer.github.com/webhooks/#events). Next we construct a callback url, which is the url we want GitHub to sent a notification to in the event that one of the events we subscribed to is triggered. GitHub's webhooks will send a `POST` request and that is why our callback route is a `POST` route. All of these values will go into the body of our request, so we add them and send the `POST` request. If we don't get an error, we construct a `hook` object from the JSON body, redirect to the home page, and call a function that will test the new webhook:
+
+```javascript
+function testWebhook(hook) {
+    console.log("Testing hook:");
+    console.log(hook);
+    var url = hook.test_url + "s";
+    console.log(url);
+    request.post({url: url, headers: {'user-agent': 'node.js', 'Content-Type': 'application/json'}}, function(err, response, body){
+        if (err){
+            console.log("Error making POST call: " + err);
+            return;
+        }
+        console.log("Successfully sent test request to webhook");
+        console.log(body);
+    });
+}
+```
+
+This function takes a webhook object and uses it's `test_url` property to send a test request. We need to add an `s` to the end of the `test_url` because as of this writing, the `test_url` parameter that GitHub sends does not exactly match the url used for testing a webhook, it's mising an `s`. Once we get the response we print out the body to the console. Here is the response we get from GitHub: `{"message":"Not Found","documentation_url":"https://developer.github.com/v3"}`. This happens because the callback we setup for the webhook, `/repo/webhook/callback`, is not accessible from the Internet. If developing locally, you will need to expose your server to the Internet by using a tool called [ngrok](https://ngrok.com/) in order to receive notifications from the webhook. I'll leave this as an exercise for you to do on your own. 
+
+## Conclusion
+
+We've created an application that allows a user to get information about their own repositories or those of another GitHub user. We've implemented GitHub's OAuth flow, which allowed us to create and delete repositories belonging to the logged in user. A user also has the ability to create a webhook for one of their repositories. These are just some of the many endpoints that GitHub's API exposes. There are many more things you can build with [their API](https://developer.github.com/v3/). And for those who rather not write all of these functionalities from scratch, you'll be able to find a [library](https://developer.github.com/libraries/) in one your favorite languages.  
