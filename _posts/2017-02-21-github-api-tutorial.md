@@ -17,6 +17,7 @@ This guide will demonstrate some of the features of GitHub's API. We will make a
     - [Create Repo](#create-repo)
     - [Delete Repo](#delete-repo)
     - [Create Repo Webhook](#create-repo-webhook)
+- [Conclusion](#conclusion)
 
 ## Getting Started
 
@@ -35,7 +36,7 @@ Press Ctrl-C to terminate
 ```
 If you visit `http://localhost:3000/home` you should see this page:
 
-<img height="500" width="800" alt="screen shot 2017-02-21 at 9 19 53 pm" src="https://cloud.githubusercontent.com/assets/16492296/23198314/8dc46bd6-f87b-11e6-9df0-646d49912303.png">
+<img height="530" width="800" alt="screen shot 2017-02-21 at 9 19 53 pm" src="https://cloud.githubusercontent.com/assets/16492296/23198314/8dc46bd6-f87b-11e6-9df0-646d49912303.png">
 
 You can also build the app from scratch by following this guide. If you're building from scratch, create the following directory structure:
 
@@ -46,12 +47,12 @@ You can also build the app from scratch by following this guide. If you're build
 │   └── stylesheets
 │       └── main.css
 └── views
-    ├── home.handlebars
     ├── layouts
     │   └── main.handlebars
-    ├── login.handlebars
     ├── partials
     │   └── header.handlebars
+    ├── home.handlebars
+    ├── login.handlebars
     └── repo.handlebars
 ```
 
@@ -91,22 +92,23 @@ var RANDOM_STRING = "superrandom";
 var userToken;
 ```
 
-As the name implies, `BASE_URL` will be the base url for most of the calls we'll making to GitHub's API. `CLIENT_ID` and `CLIENT_SECRET` will hold the values GitHub gives us when we create an OAuth application, which we did previously. These variables attempt to get the values from environment variables and if those don't exist, they are assigned strings that will fail if we attempt to make authenticated calls with them. You'll need to set these environment variables (environment variables are one effective way of storing secrets). If you're on a Mac or Linux OS, you should be able to do `export CLIENT_ID=yourclientid` and `export CLIENT_SECRET=yoursecret`. 
+As the name implies, `BASE_URL` will be the base url for most of the calls we'll be making to GitHub's API. `CLIENT_ID` and `CLIENT_SECRET` will hold the values GitHub gave us when we created an OAuth application, which we did previously. These variables attempt to get the values from environment variables and if those don't exist, they are assigned strings that will fail if we attempt to make authenticated calls with them. You'll need to set these environment variables (environment variables are one effective way of storing secrets). If you're on a Mac or Linux OS, you should be able to do `export CLIENT_ID=yourclientid` and `export CLIENT_SECRET=yoursecret` from the terminal to set up the environment variables. 
 
 ## Templates Setup
 
-If you're building from scratch, this would be a good idea to fill in all the template files with their corresponding codes. Go [here](https://github.com/mikaelm1/github-api-tutorial/tree/master/views) and copy and paste the template source code into its corresponding file.
+If you're building from scratch, this would be a good time to fill in all the template files with their corresponding codes. Go [here](https://github.com/mikaelm1/github-api-tutorial/tree/master/views) and copy and paste the template source code into its corresponding file.
 
 ## Auth Routes
 
 Let's start with our first route. Inside `app.js`, after `var userToken;`, we have the following:
 ```javascript
 app.get('/home', function(req, res){
-    res.render("home", {userToken: userToken});
+    res.render("home", {userToken: userToken, message: flashMessage});
+    flashMessage = null;
 });
 ```
 
-If you go to `http://localhost:3000/home` you'll see the `home.handlebars` page rendered. On the right of the navbar there is a `Login` button that will take the user to the login page. The button makes a `GET` request to a `/login` route so let's add that route:
+If you go to `http://localhost:3000/home` you'll see the `home.handlebars` page rendered. On the top right of the navbar there is a `Login` button that will take the user to the login page. The button makes a `GET` request to a `/login` route so let's add that route:
 
 ```javascript
 app.get('/login', function(req, res){
@@ -115,9 +117,9 @@ app.get('/login', function(req, res){
 });
 ```
 
-This route builds a url with the `CLIENT_ID` we declared before. This is a good time to talk about the OAuth flow GitHub uses. First, we'll be making a `GET` request to `https://github.com/login/oauth/authorize?client_id=CLIENT_ID&state=randomstring&scope=user:email`, which will then return a session token to the Authorization callback url we provided when we created the OAuth application (http://localhost:3000/gitauth). The token we get from GitHub in our callback route is a temporary token that we need to use in order to get an access_token for the user, which is what we're after. We get the user's token by making another request with the temporary token GitHub gave us.
+This route builds a url with the `CLIENT_ID` we declared before. This is a good time to talk about the OAuth flow GitHub uses. First, we'll be making a `GET` request to `https://github.com/login/oauth/authorize?client_id=CLIENT_ID&state=randomstring&scope=user:email`, which will then return a session token to the Authorization callback url we provided when we created the OAuth application (`http://localhost:3000/gitauth`). The token we get from GitHub in our callback route is a temporary token that we need to use in order to get an access_token for the user, which is what we're after. We get the user's token by making another request with the temporary token GitHub gave us.
 
-Before we get to the callback route, let's go over what the parameters in our url mean. The parameter `state` is an optional parameter that we can pass that will hold a random string, that we will be returned in our callback route. Then in our callback route, we can check to make sure that this string matches the one we sent, if it doesn't, then there is a good chance that the request did not originate from GitHub and should be handled appropriately. The `client_id` param is simple the key that will hold our `CLIENT_ID`. The `scope` parameter is where we ask for the different types of access to the user's account. Here we are asking for access to their email, followers, repos, and the ability to delete their repos. You can find out more about the different scope categories [here](https://developer.github.com/v3/oauth/#scopes). Now that we understand the first step of the OAuth flow, let's move on to the callback route:
+Before we get to the callback route, let's go over what the parameters in our url mean. The parameter `state` is an optional parameter that we can pass that will hold a random string, that we will be returned in our callback route. Then in our callback route, we can check to make sure that this string matches the one we sent, if it doesn't, then there is a good chance that the request did not originate from GitHub and should be handled appropriately. The `client_id` param is simply the key that will hold our `CLIENT_ID`. The `scope` parameter is where we ask for the different types of access to the user's account. Here we are asking for access to their email, followers, repos, and the ability to delete their repos. You can find out more about the different scope categories [here](https://developer.github.com/v3/oauth/#scopes). Now that we understand the first step of the OAuth flow, let's move on to the callback route:
 
 ```javascript
 app.get('/gitauth', function(req, res){
@@ -143,7 +145,7 @@ app.get('/gitauth', function(req, res){
 });
 ```
 
-This is the route that GitHub will send the user's `access_token` to if our previous request was successful. We first retrieve the sessionCode and state values from the request and check to make sure the request originated from GitHub, and if the state doesn't match, we redirect to the home page. Otherwise, we construct the url we need, and we add the `CLIENT_ID`, `CLIENT_SECRET`, and `sessionCode` as parameters. We'll be making a `POST` request, and if we don't specify that we want a JSON response, GitHub will send the response back as text or xml. Therefore, we add `{'Accept': 'application/json'}` to our request's header. If GitHub doesn't respond with an error, we parse the body into JSON and assign the `access_token` to our global `userToken` variable and redirect to the home page. Now that the user is logged in, the `Login` link from the navbar should be replaced with a `Logout` link (but this link will not do anything if clicked on). From this point on, whenever we make a call to an endpoint that is only available to an authenticated user, we will provide the `userToken` in the url as a parameter, `?access_token=userToken`.
+This is the route that GitHub will send the user's `access_token` to if our previous request was successful. We first retrieve the `sessionCode` and `state` values from the request and check to make sure the request originated from GitHub, and if the state doesn't match, we redirect to the home page. Otherwise, we construct the url we need, and we add the `CLIENT_ID`, `CLIENT_SECRET`, and `sessionCode` as parameters. We'll be making a `POST` request, and if we don't specify that we want a JSON response, GitHub will send the response back as text or xml. Therefore, we add `{'Accept': 'application/json'}` to our request's header. If GitHub doesn't respond with an error, we parse the body into JSON and assign the `access_token` to our global `userToken` variable and redirect to the home page. Now that the user is logged in, the `Login` link from the navbar should be replaced with a `Logout` link (but this link will not do anything if clicked on). From this point on, whenever we make a call to an endpoint that is only available to an authenticated user, we will provide the `userToken` in the url as a parameter, `?access_token=userToken`.
 
 ## Repo Routes
 
@@ -205,7 +207,7 @@ function getData(url, withAuth, callback) {
 }
 ```
 
-This helper function takes a url string, a `boolean` value to determine wheter the call is to an authenticated route, and a callback function. We need a callback function because we're making an http request and don't know how long it will take for use to get a response (another way of doing this would be to use [promises](https://developers.google.com/web/fundamentals/getting-started/primers/promises)). We need to set a `user-agent` header value, otherwise GitHub will return an error. If we get an error in the response we send back an empty string, else we parse the body to JSON and send it back via the callback function. Back in our `POST` `/repo` route, we decalare a `repoData` array that will hold our repo objects. We iterate through the JSON response and create a repo object with three fields: `repoName`, `repoCreated`, and `repoDesc`. We then sort the array using the helper function shown below, and then pass this array to `repo.handlebars` template, which will display the repos as a list.
+This helper function takes a url string, a `boolean` value to determine wheter the call is to an authenticated route, and a callback function. We need a callback function because we're making an http request and don't know how long it will take for us to get a response (another way of doing this would be to use [promises](https://developers.google.com/web/fundamentals/getting-started/primers/promises)). We need to set a `user-agent` header value, otherwise GitHub will return an error. If we get an error in the response we send back an empty string, else we parse the body to JSON and send it back via the callback function. Back in our `POST` `/repo` route, we decalare a `repoData` array that will hold our repo objects. We iterate through the JSON response and create a `repo` object with three fields: `repoName`, `repoCreated`, and `repoDesc`. We then sort the array using the helper function shown below, and then pass this array to `repo.handlebars` template, which will display the repositories as a list.
 
 ```javascript
 function byDate(lh, rh) {
@@ -227,6 +229,7 @@ app.post('/repo/create', function(req, res){
     // Only for authenticated users 
     var repoName = req.body.reponame;
     if (!userToken || !repoName) {
+        flashMessage = "Need to be logged in to create repository";
         res.redirect("/home");
         return;
     }
@@ -276,7 +279,7 @@ Back in our route to create a repository, before we make the request, we constru
 
 #### Delete Repo
 
-The user of our application now has the ability to fetch the data for a user's repositories and can even create a new repository. Now let's add the ability to delete a repository. If you remember earlier, when authenticating the user, we added the `delete_repo` scope request because without it we won't be able to delete a user's repository. Our home page has a form that let's the user delete one of their repositories by entering their GitHub username along with the name of the repository. This will not work for unauthenticated users. The form sends a `POST` request to route `/repo/delete`. We also add a helper function for making `DELETE` requests: 
+The user of our application now has the ability to fetch the data for a user's repositories and can even create a new repository. Now let's add the ability to delete a repository. If you remember earlier, when authenticating the user, we added the `delete_repo` scope request because without it we wouldn't be able to delete a user's repository. Our home page has a form that let's the user delete one of their repositories by entering their GitHub username along with the name of the repository. This will not work for unauthenticated users. The form sends a `POST` request to route `/repo/delete`. We also add a helper function for making `DELETE` requests: 
 
 ```javascript
 // helper function for sending DELETE requests
@@ -300,23 +303,26 @@ app.post('/repo/delete', function(req, res){
     var userName = req.body.username;
     var repoName = req.body.reponame;
     if (!userToken || !userName || !repoName) {
-        res.render("home", {userToken: userToken, message:"Error deleting repo"});
+        flashMessage = "Error deleting repo";
+        res.redirect("/home");
     }
     var url = BASE_URL + "/repos/" + userName + "/" + repoName;
     deleteData(url, function(body){
         if (body === "") {
             console.log("Got empty body for delete repo");
-            res.render("home", {userToken: userToken, message:"Error deleting repo"});
+            flashMessage = "Error deleting repo";
+            res.redirect("/home");
             return;
         }
-        res.render("home", {userToken: userToken, message:"Successfully deleted repo"});
+        flashMessage = "Successfully deleted repo";
+        res.redirect("/home");
     });
 });
 ```
 
 The `deleteData` function takes a url string and a callback function, which will return the response. There is no need for a boolean checking for auth because all `DELETE` calls will require an authenticated user and if the user is not authenticated, `deleteData` returns an empty string via the callback function. Otherwise, it makes the `DELETE` request to GitHub. If there is an error, the callback function returns an empty string. If our request is successful, GitHub will return a status of 204, which can be found in the header of the response. GitHub sends an empty body value on a successful request.
 
-Back in our route that will be making the `DELETE` request, we make sure that the user is authenticated and that they entered both a username and reponame that they want deleted. If either of these is false, we render the `home.handlebars` template with an error message. Otherwise, we build up the url and call the `deleteData` function. If we don't get an empty `body` response from `deleteData`, we know we successfully deleted the repository. We then render the `home.handlebars` template with a success message.
+Back in our route that will be making the `DELETE` request, we make sure that the user is authenticated and that they entered both a username and reponame that they want deleted. If either of these is false, we redirect back to the `/home` route with an error message. Otherwise, we build up the url and call the `deleteData` function. If we don't get an empty `body` response from `deleteData`, we know we successfully deleted the repository. We then redirect to the `/home` route with a success message.
 
 #### Create Repo Webhook
 
@@ -361,7 +367,7 @@ app.post('/repo/webhook/callback', function(req, res){
 });
 ```
 
-First, we make sure that the user is logged in and that they entered their username and name of repository. If not, we set an error message and redirect back to the home page. Otherwise, we construct the url `/repos/:owner/:repo/hooks` along with the types of events we want to subscribe to. There are many different event types to choose from and you can see them all [here](https://developer.github.com/webhooks/#events). Next we construct a callback url, which is the url we want GitHub to sent a notification to in the event that one of the events we subscribed to is triggered. GitHub's webhooks will send a `POST` request and that is why our callback route is a `POST` route. All of these values will go into the body of our request, so we add them and send the `POST` request. If we don't get an error, we construct a `hook` object from the JSON body, redirect to the home page, and call a function that will test the new webhook:
+First, we make sure that the user is logged in and that they entered their username and name of repository. If not, we set an error message and redirect back to the home page. Otherwise, we construct the url `/repos/:owner/:repo/hooks` along with the types of events we want to subscribe to. There are many different event types to choose from and you can see them all [here](https://developer.github.com/webhooks/#events). Next we construct a callback url, which is the url we want GitHub to send a notification to in the event that one of the events we subscribed to is triggered. GitHub's webhooks will send a `POST` request and that is why our callback route is a `POST` route. All of these values will go into the body of our request, so we add them and send the `POST` request. If we don't get an error, we construct a `hook` object from the JSON body, redirect to the home page, and call a function that will test the new webhook:
 
 ```javascript
 function testWebhook(hook) {
