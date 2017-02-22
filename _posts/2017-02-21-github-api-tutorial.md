@@ -12,6 +12,9 @@ This guide will demonstrate some of the features of GitHub's API. We will make a
 - [Base Application Setup](#base-application-setup)
 - [Templates Setup](#template-setup)
 - [Auth Routes](#auth-routes)
+- [Repo Routes](#repo-routes)
+    - [Get Repo Data](#get-repo-data)
+    - [Create Repo](#create-repo)
 
 ## Getting Started
 
@@ -138,4 +141,133 @@ app.get('/gitauth', function(req, res){
 });
 ```
 
-This is the route that GitHub will send the user's access_token to if our previous request was successful. We first retrieve the sessionCode and state values from the request and check to make sure the request originated from GitHub, and if the state doesn't match, we redirect to the home page. Otherwise, we construct the url we need, and we add the `CLIENT_ID`, `CLIENT_SECRET`, and `sessionCode` as parameters. We'll be making a `POST` request, and if we don't specify that we want a JSON response, GitHub will send the response back as text or xml. Therefore, we add `{'Accept': 'application/json'}` to our request's header. If the GitHub doesn't respond with an error, we parse the body into JSON and assign the access_token to our global `userToken` variable and redirect to the home page. Now that the user is logged in, the `Login` link from the navbar should be replaced with a `Logout` link (but this link will not do anything if clicked on).
+This is the route that GitHub will send the user's `access_token` to if our previous request was successful. We first retrieve the sessionCode and state values from the request and check to make sure the request originated from GitHub, and if the state doesn't match, we redirect to the home page. Otherwise, we construct the url we need, and we add the `CLIENT_ID`, `CLIENT_SECRET`, and `sessionCode` as parameters. We'll be making a `POST` request, and if we don't specify that we want a JSON response, GitHub will send the response back as text or xml. Therefore, we add `{'Accept': 'application/json'}` to our request's header. If GitHub doesn't respond with an error, we parse the body into JSON and assign the `access_token` to our global `userToken` variable and redirect to the home page. Now that the user is logged in, the `Login` link from the navbar should be replaced with a `Logout` link (but this link will not do anything if clicked on). From this point on, whenever we make a call to an endpoint that is only available to an authenticated user, we will provide the `userToken` in the url as a parameter, `?access_token=userToken`.
+
+## Repo Routes
+
+#### Get Repo Data
+
+Now that we have an authenticated user, we can begin making calls to the more fun features of GitHub's API. In this section we will learn how to get data related to a user's repositories, both an authenticated and unauthenticated user, and see how the two different calls are made. GitHub has many different endpoints and not all of them require an authenticated user, but many do. We will also implement features that will allow an authenticated user to create and delete their own repositories.
+
+On the home page, the user can fetch all the repositories for a given user, and if the user is logged in and leaves the input field empty, then their own repositories will be fetched. Clicking on the `Fetch My Repos` button sends a `POST` request to this route:
+
+```javascript
+app.post('/repo', function(req, res){
+    userName = req.body.username;
+    var url = BASE_URL;
+    var useAuth = true;
+    if (userName === "") {
+        // get logged in user's repos 
+        url += "/user/repos";
+    } else {
+        // get repos for unauth user 
+        useAuth = false;
+        url += "/users/" + userName + "/repos";
+    }
+    var repoData = []
+    getData(url, useAuth, function(body){
+        if (body === ""){
+            console.log("Error");
+        } else {
+            body.forEach(function(r){
+                var repo = {};
+                repo.repoName = r.name;
+                repo.repoCreated = r.created_at;
+                repo.repoDesc = r.description;
+                repoData.push(repo);
+            });
+        }
+        repoData.sort(byDate); // sort by newest created at top
+        var dataCount = repoData.length;
+        res.render("repo", {userName: userName, repoArray: repoData, dataCount: dataCount, userToken: userToken});
+    });
+});
+```
+
+The urls for getting a user's repositories are different depending on if we are getting the data for an authenticated user or for someone else. If we're getting the data for an unauthenticated user, we will only get back their public data. The url for an authenticated user is `/user/repos`, while the one for an unauthenticated user is `/users/:username/repos`, where `username` is the GitHub username of some user. We will be making multiple `GET` requests in our app and so it's a good idea to have a generic function that can handle all of those calls, which means less code duplication:
+
+```javascript
+function getData(url, withAuth, callback) {
+    if (withAuth && userToken) {
+        url += "?access_token=" + userToken;
+    }
+    request.get({url, headers: {'user-agent': 'node.js'}}, function(err, response, body){
+        if (err){
+            console.log("Error making GET call: " + err);
+            callback("");
+            return;
+        }
+        var jsonBody = JSON.parse(body);
+        callback(jsonBody);
+    })
+}
+```
+
+This helper function takes a url string, a `boolean` value to determine wheter the call is to an authenticated route, and a callback function. We need a callback function because we're making an http request and don't know how long it will take for use to get a response (another way of doing this would be to use [promises](https://developers.google.com/web/fundamentals/getting-started/primers/promises)). We need to set a `user-agent` header value, otherwise GitHub will return an error. If we get an error in the response we send back an empty string, else we parse the body to JSON and send it back via the callback function. Back in our `POST` `/repo` route, we decalare a `repoData` array that will hold our repo objects. We iterate through the JSON response and create a repo object with three fields: `repoName`, `repoCreated`, and `repoDesc`. We then sort the array using the helper function shown below, and then pass this array to `repo.handlebars` template, which will display the repos as a list.
+
+```javascript
+function byDate(lh, rh) {
+    if (lh.repoCreated < rh.repoCreated) {
+        return 1;
+    } else if (lh.repoCreated > rh.repoCreated) {
+        return -1;
+    }
+    return 0;
+}
+```
+
+#### Create Repo
+
+Now that we know how to fetch data for a user's repositories, it's time to create a new repository for a user. This will require that the user be authenticated. A user is authenticated if our global `userToken` variable has a value. The home page has a form that the user can use to create a repository by entering a name for it and a description. The submit button of this form sends a `POST` request to `/repo/create`:
+
+```javascript
+app.post('/repo/create', function(req, res){
+    // Only for authenticated users 
+    var repoName = req.body.reponame;
+    if (!userToken || !repoName) {
+        res.redirect("/home");
+        return;
+    }
+    var repoDesc = req.body.description;
+    var url = BASE_URL + "/user/repos"
+    // will default to MIT license and no README
+    var postBody = {'name': repoName, 'description': repoDesc, 'license_template': 'mit'};
+    postData(url, true, postBody, function(body){
+        if (body === ""){
+            console.log("Error getting POST response");
+            res.redirect("/home");
+            return;
+        }
+        var repoData = []
+        var repo = {};
+        repo.repoName = body.name;
+        repo.repoCreated = body.created_at;
+        repo.repoDesc = body.description;
+        var repoOwner = body.owner.login;
+        repoData.push(repo);
+        res.render("repo", {userName: repoOwner, repoArray: repoData, dataCount: 1, userToken: userToken, message: "Successfully created repo"});
+    });
+});
+```
+
+If the user is not authenticated or does not provide a repository name, they get redirected back to the home page and nothing happens. Otherwise, we construct the url, which for creating a repository is a `POST` to `/user/repos`. It's safe to assume that we will be making multiple `POST` requests and so we make another generic function that will handle all of our `POST` requests:
+
+```javascript
+function postData(url, withAuth, body, callback) {
+    if (withAuth && userToken) {
+        url += "?access_token=" + userToken;
+    }
+    request.post({url, headers: {'user-agent': 'node.js', 'Content-Type': 'application/json'}, json: body}, function(err, response, body){
+        if (err){
+            console.log("Error making POST call: " + err);
+            callback("");
+            return;
+        }
+        callback(body);
+    });
+}
+```
+
+The helper function takes a url string, a boolean value to determine if it's an authenticated call, a dictionary for any possible values to be passed in the request body, and a callback function which will return the data to the calling function. The request edits the url if necessary based on if the call is to an authenticated user or not. It also sets a `user-agent` header and a `Content-Type` header to get the response in JSON format. If we get an error from GitHub, it returns an empty string, else it returns the JSON response.
+
+Back in our route to create a repository, before we make the request, we construct the body values we want to send. In our case, we will be sending the name and description the user entered, along with the `license_template` key that we set to `mit`, which will generate a `LICENSE` file with an MIT License in the newly created repository. There are many more options we can set, such as creating a `README`, when creating a repository and you can read about them [here](https://developer.github.com/v3/repos/#create). Once we have the url and body constructed, we call our helper `postData` function. If we don't get back an error, we construct a `repo` object from the JSON response by parsing out the name of the repo, date it was created, its description, and its owner's username. We then render the `repo.handlebars` template passing in the `repo` object in an array (the template is expecting an array) along with some other values like a `message` field, which the template will render as an alert at the top of the screen. 
